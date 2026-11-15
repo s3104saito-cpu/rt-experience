@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>放射線治療体験：肺癌 1スライス・プランニング</title>
+<style>
+:root{--bg:#0b0f14;--panel:#151b23;--line:#263040;--tx:#e6edf3;--sub:#9aa7b4;--ac:#4cc2ff;--ok:#3fb950;--ng:#f85149;--warn:#d29922}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.55}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);position:relative;z-index:5;background:var(--bg)}
+header h1{font-size:15px;margin:0;font-weight:700}
+.badge{font-size:11px;color:var(--sub);border:1px solid var(--line);border-radius:99px;padding:2px 8px;white-space:nowrap}
+main{max-width:1100px;margin:0 auto;padding:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+h2{font-size:17px;margin:0 0 6px}
+h3{font-size:14px;margin:10px 0 6px;color:var(--sub);font-weight:600}
+p{margin:6px 0}
+.small{font-size:12px;color:var(--sub)}
+button{font:inherit;color:var(--tx);background:#202a36;border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer;touch-action:manipulation}
+button:active{transform:scale(.98)}
+button.primary{background:var(--ac);color:#04121c;border-color:var(--ac);font-weight:700}
+button.on{background:#1d4a63;border-color:var(--ac)}
+button:disabled{opacity:.4}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.row>button{flex:1 1 auto}
+input[type=text]{font:inherit;width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0e141b;color:var(--tx)}
+input[type=range]{width:100%;accent-color:var(--ac)}
+.viewer{position:relative;width:100%;max-width:560px;margin:0 auto}
+.viewer canvas{width:100%;height:auto;display:block;border-radius:10px;background:#000}
+canvas.draw{touch-action:none}
+.sticky{position:sticky;top:0;z-index:4;background:var(--bg);padding:6px 0}
+.sticky .viewer{max-width:min(560px,46vh)}
+.tag{position:absolute;left:8px;top:6px;font-size:11px;color:#cfd8e3;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:6px;pointer-events:none}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--sub);justify-content:center;margin-top:4px}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:4px;border-radius:2px}
+.big{font-size:40px;font-weight:800;line-height:1}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.metric{border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:#0e141b}
+.metric span{display:block;font-size:11px;color:var(--sub)}
+.metric b{font-size:18px}
+.metric small{font-size:10px;color:var(--sub);margin-left:4px}
+.metric.ok{border-color:#2a6b38}.metric.ok b{color:var(--ok)}
+.metric.ng{border-color:#7a2f2b}.metric.ng b{color:var(--ng)}
+.beam{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0;background:#0e141b}
+.beam .hd{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.beam .hd button{padding:4px 10px;font-size:12px}
+.lab{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-top:4px}
+.comment{background:#10202b;border-left:3px solid var(--ac);padding:8px 10px;border-radius:6px;margin:8px 0;font-size:14px}
+.comment li{margin:2px 0}
+.comment ul{margin:0;padding-left:18px}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tabs button{flex:1}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}
+th:nth-child(2),td:nth-child(2){text-align:left}
+.up{color:var(--ok)}.down{color:var(--ng)}
+.host-wrap{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:900px){.host-wrap{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}.host-wrap .viewer{max-width:none}}
+.picks{display:flex;flex-direction:column;gap:6px}
+.picks button{text-align:left}
+.hist{display:flex;align-items:flex-end;gap:3px;height:90px;margin-top:6px}
+.hist div{flex:1;background:var(--ac);border-radius:3px 3px 0 0;position:relative;min-height:1px}
+.hist span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--sub)}
+footer{text-align:center;padding:20px 0 30px;font-size:12px;color:var(--sub)}
+footer a{color:var(--sub)}
+.warnline{color:var(--warn);font-size:12px}
+</style>
+</head>
+<body>
+<header><h1>放射線治療体験 ― 肺癌</h1><span class="badge" id="badge">準備中…</span></header>
+<main id="app"><div class="card"><p>画像を準備しています…</p></div></main>
+<footer><a href="#host" id="hostLink">講師用画面</a> ・ <a href="#play">参加者画面</a><br>教育用シミュレーション（模擬画像・簡易線量計算）。診療には使用できません。</footer>
+<script>
+'use strict';
+/* ===================== 設定 ===================== */
+const N=256, PX=1.5, ND=96, DPX=4, HALF=N*PX/2;   // 画像 256px × 1.5mm, 線量格子 96 × 4mm
+const RX=60;                                    // 処方線量 Gy
+const CFG={refCtvMm:5, ptvMm:5, blockMm:10,sig0:3.5,sigLung:3, cordLimit:45, v20Limit:35, mldLimit:20, heartLimit:26, v95Goal:95, mu:0.035, sad:1000, maxBeams:7};
+const MARGINS=[0,5,8,10];
+const VIEW_ZOOM={cx:-46,cy:6,half:52}, VIEW_FULL={cx:0,cy:4,half:168};
+
+/* ===================== 小道具 ===================== */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const pxToMm=i=>(i-N/2+0.5)*PX;
+function erf(x){const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function gaussBlur(a,w,h,sig){
+  const r=Math.ceil(sig*3),ker=[];let s=0;for(let i=-r;i<=r;i++){const v=Math.exp(-i*i/(2*sig*sig));ker.push(v);s+=v}for(let i=0;i<ker.length;i++)ker[i]/=s;
+  const t=new Float32Array(a.length);
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++){let v=0;for(let k=-r;k<=r;k++){const ii=clamp(i+k,0,w-1);v+=a[j*w+ii]*ker[k+r]}t[j*w+i]=v}
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++){let v=0;for(let k=-r;k<=r;k++){const jj=clamp(j+k,0,h-1);v+=t[jj*w+i]*ker[k+r]}a[j*w+i]=v}
+}
+
+/* ===================== 模擬ファントム（CT/PET） ===================== */
+const P=(()=>{
+  const rnd=mulberry32(20261115), n2=N*N;
+  const HU=new Float32Array(n2), SUV=new Float32Array(n2), mk=()=>new Uint8Array(n2);
+  const body=mk(),lung=mk(),heart=mk(),cord=mk(),gtv=mk(),atel=mk(),bone=mk(),aorta=mk();
+  const inE=(x,y,cx,cy,a,b)=>((x-cx)/a)**2+((y-cy)/b)**2<=1;
+  const TC={x:-46,y:2};
+  const tr=p=>15+2.8*Math.sin(3*p+0.5)+1.8*Math.cos(5*p)+1.2*Math.sin(9*p+1);
+  const vess=[];for(let k=0;k<90;k++)vess.push([(rnd()-0.5)*260,(rnd()-0.5)*170-5,0.8+rnd()*2]);
+  const ribs=[-35,-60,-120,-145,8,32,58,122,148,172].map(d=>{const r=d*Math.PI/180;return[145*Math.cos(r),5+95*Math.sin(r)]});
+  const wl=Math.hypot(-0.75,0.66), wd=[-0.75/wl,0.66/wl];
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){
+    const k=j*N+i,x=pxToMm(i),y=pxToMm(j);
+    if(!(inE(x,y,0,5,160,110)&&y<=112)){HU[k]=-1000;SUV[k]=0;continue}
+    body[k]=1;
+    let hu=40+(rnd()-0.5)*24,suv=0.7;
+    if(!inE(x,y,0,5,149,99)){hu=-100+(rnd()-0.5)*24;suv=0.4}
+    const isHeart=inE(x,y,22,-28,50,40), vr=Math.hypot(x,y-60), isVert=vr<=19, isAo=Math.hypot(x-26,y-46)<=12;
+    const inR=inE(x,y,-72,-2,60,80)&&x<-14&&!isHeart&&!isVert;
+    const inL=inE(x,y,74,-2,56,78)&&x>14&&!isHeart&&!isVert&&!isAo;
+    if(inR||inL){hu=-830+(rnd()-0.5)*50;suv=0.35;
+      for(const v of vess){if((x-v[0])**2+(y-v[1])**2<=v[2]*v[2]){hu=-80+(rnd()-0.5)*40;suv=0.9;break}}
+      lung[k]=1}
+    if(isHeart){hu=42+(rnd()-0.5)*20;const e=((x-22)/50)**2+((y+28)/40)**2;suv=e>0.5?3.8:1.8;heart[k]=1}
+    if(isAo){hu=45+(rnd()-0.5)*20;suv=1.8;aorta[k]=1}
+    const er=Math.hypot(x+4,y-38);if(er<=7){hu=er<=2.5?-900:35;suv=1.2}
+    if(isVert){hu=(vr>15?800:300)+(rnd()-0.5)*60;suv=1.6;bone[k]=1}
+    const cr=Math.hypot(x,y-86);
+    if(cr<=9){hu=cr<=5?35:12;suv=cr<=5?1.0:0.5;if(cr<=5)cord[k]=1}
+    else if(cr<=14&&y>80){hu=700;bone[k]=1;suv=1.4}
+    if(Math.abs(x)<=4&&y>=96&&y<=110){hu=650;bone[k]=1}
+    if(Math.abs(x)<=13&&y>=-99&&y<=-89){hu=500;bone[k]=1}
+    for(const r of ribs){if((x-r[0])**2+(y-r[1])**2<=25){hu=750;bone[k]=1}}
+    if(inR){const dx=x-TC.x,dy=y-TC.y,d=Math.hypot(dx,dy),ph=Math.atan2(dy,dx);
+      if(d<=tr(ph)){hu=36+(rnd()-0.5)*30;suv=4+10*Math.exp(-((d/11)**2));gtv[k]=1}
+      else if(d<52&&(dx*wd[0]+dy*wd[1])/d>Math.cos(0.42+0.004*d)){hu=26+(rnd()-0.5)*30;suv=1.1;atel[k]=1}}
+    HU[k]=hu;SUV[k]=suv;
+  }
+  gaussBlur(HU,N,N,0.8);for(let k=0;k<n2;k++)if(body[k])HU[k]+=(rnd()-0.5)*(HU[k]<-500?60:30);
+  gaussBlur(SUV,N,N,3.0);
+  for(let k=0;k<n2;k++)SUV[k]=Math.max(0,SUV[k]*(1+(rnd()-0.5)*0.15));
+  const lungS=mk(), allowCTV=mk(), dens=new Float32Array(n2);
+  for(let k=0;k<n2;k++){
+    lungS[k]=lung[k]&&!gtv[k]?1:0;
+    allowCTV[k]=body[k]&&!bone[k]&&!heart[k]&&!aorta[k]?1:0;
+    const h=HU[k];dens[k]=!body[k]?0:h<0?Math.max(0,1+h/1000):1+h*0.0006;
+  }
+  return {HU,SUV,body,lung,lungS,heart,cord,gtv,atel,bone,aorta,allowCTV,dens,TC};
+})();
+
+/* ===================== マスク処理 ===================== */
+function rasterPoly(pts){ // pts: [x0,y0,x1,y1,...] mm
+  const m=new Uint8Array(N*N), n=pts.length/2; if(n<3)return m;
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(let p=0;p<n;p++){x0=Math.min(x0,pts[2*p]);x1=Math.max(x1,pts[2*p]);y0=Math.min(y0,pts[2*p+1]);y1=Math.max(y1,pts[2*p+1])}
+  const i0=clamp(Math.floor(x0/PX+N/2),0,N-1),i1=clamp(Math.ceil(x1/PX+N/2),0,N-1),j0=clamp(Math.floor(y0/PX+N/2),0,N-1),j1=clamp(Math.ceil(y1/PX+N/2),0,N-1);
+  for(let j=j0;j<=j1;j++){const y=pxToMm(j);for(let i=i0;i<=i1;i++){const x=pxToMm(i);let c=false;
+    for(let a=0,b=n-1;a<n;b=a++){const xa=pts[2*a],ya=pts[2*a+1],xb=pts[2*b],yb=pts[2*b+1];
+      if((ya>y)!==(yb>y)&&x<(xb-xa)*(y-ya)/(yb-ya)+xa)c=!c}
+    if(c)m[j*N+i]=1}}
+  return m;
+}
+function dilate(mask,rmm,allow){
+  const out=Uint8Array.from(mask), r=Math.ceil(rmm/PX), offs=[];
+  if(rmm>0){for(let dj=-r;dj<=r;dj++)for(let di=-r;di<=r;di++)if(Math.hypot(di,dj)*PX<=rmm+1e-6)offs.push([di,dj]);
+    for(let j=0;j<N;j++)for(let i=0;i<N;i++){const k=j*N+i;if(!mask[k])continue;
+      if(i>0&&i<N-1&&j>0&&j<N-1&&mask[k-1]&&mask[k+1]&&mask[k-N]&&mask[k+N])continue;
+      for(const o of offs){const ii=i+o[0],jj=j+o[1];if(ii>=0&&ii<N&&jj>=0&&jj<N)out[jj*N+ii]=1}}}
+  if(allow)for(let k=0;k<out.length;k++)if(!allow[k])out[k]=0;
+  return out;
+}
+const count=m=>{let c=0;for(let k=0;k<m.length;k++)c+=m[k];return c};
+function centroid(m){let sx=0,sy=0,c=0;for(let j=0;j<N;j++)for(let i=0;i<N;i++)if(m[j*N+i]){sx+=pxToMm(i);sy+=pxToMm(j);c++}return c?{x:sx/c,y:sy/c}:{x:0,y:0}}
+function buildTargets(gtv,margin){
+  const ctv=dilate(gtv,margin,P.allowCTV);for(let k=0;k<ctv.length;k++)if(gtv[k])ctv[k]=1;
+  const ptv=dilate(ctv,CFG.ptvMm,P.body);
+  return {ctv,ptv};
+}
+function contourEval(m){
+  let a=0,b=0,ab=0,at=0,ex=0;
+  for(let k=0;k<m.length;k++){const u=m[k],g=P.gtv[k];a+=u;b+=g;if(u&&g)ab++;if(u&&P.atel[k])at++;if(u&&!g&&!P.atel[k])ex++}
+  return {dice:a+b?2*ab/(a+b):0,atelFrac:a?at/a:0,extraFrac:a?ex/a:0,missFrac:b?(b-ab)/b:1,area:a*PX*PX/100};
+}
+function contourComment(e){
+  const c=[];
+  if(e.dice>=0.85)c.push('エキスパートとほぼ一致しています。見事です。');
+  else if(e.dice>=0.7)c.push('おおむね良好です。細部（辺縁の凹凸）で差が出ています。');
+  else c.push('エキスパートの輪郭とのずれが大きめです。');
+  if(e.atelFrac>0.15)c.push('腫瘍の外側後方まで含めていませんか？CTでは同じように白く見えても、PETで集積のない部分は無気肺の可能性が高い領域です。');
+  if(e.extraFrac>0.2)c.push('正常肺や縦隔まで広めに含まれています。GTVは「見えている腫瘍」だけに留め、広がりはCTVマージンで表現します。');
+  if(e.missFrac>0.2)c.push('腫瘍の一部が輪郭から外れています。肺野条件で見える辺縁の凹凸まで追ってみましょう。');
+  return c;
+}
+
+/* ===================== 等値線（marching squares） ===================== */
+function isoSegs(f,w,thr,cell){ // returns mm coords flat [x1,y1,x2,y2,...]
+  const out=[], toMm=g=>(g-w/2+0.5)*cell;
+  for(let j=0;j<w-1;j++)for(let i=0;i<w-1;i++){
+    const a=f[j*w+i],b=f[j*w+i+1],c=f[(j+1)*w+i+1],d=f[(j+1)*w+i];
+    const k=(a>=thr?8:0)|(b>=thr?4:0)|(c>=thr?2:0)|(d>=thr?1:0);
+    if(k===0||k===15)continue;
+    const t=(p,q)=>q===p?0.5:(thr-p)/(q-p);
+    const T=[i+t(a,b),j],R=[i+1,j+t(b,c)],B=[i+t(d,c),j+1],L=[i,j+t(a,d)];
+    let s;
+    switch(k){case 1:case 14:s=[L,B];break;case 2:case 13:s=[B,R];break;case 3:case 12:s=[L,R];break;case 4:case 11:s=[T,R];break;
+      case 5:s=[L,T,B,R];break;case 6:case 9:s=[T,B];break;case 7:case 8:s=[L,T];break;case 10:s=[T,R,L,B];break}
+    for(const p of s)out.push(toMm(p[0]),toMm(p[1]));
+  }
+  return out;
+}
+const maskSegs=m=>isoSegs(m,N,0.5,PX);
+const SEG={body:maskSegs(P.body),lung:maskSegs(P.lung),heart:maskSegs(P.heart),cord:maskSegs(P.cord)};
+const REF=(()=>{const t=buildTargets(P.gtv,CFG.refCtvMm);return {ctv:t.ctv,ptv:t.ptv,gtvSeg:maskSegs(P.gtv),ptvSeg:maskSegs(t.ptv)}})();
+
+/* ===================== 線量計算（簡易：実効深補正つき平行ビーム） ===================== */
+function beamDose(angle,ptv,iso){
+  const th=angle*Math.PI/180, sx=Math.sin(th), sy=-Math.cos(th), qx=Math.cos(th), qy=Math.sin(th);
+  let umin=1e9,umax=-1e9;
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++)if(ptv[j*N+i]){const u=(pxToMm(i)-iso.x)*qx+(pxToMm(j)-iso.y)*qy;if(u<umin)umin=u;if(u>umax)umax=u}
+  const a=umin-CFG.blockMm,b=umax+CFG.blockMm, out=new Float32Array(ND*ND), step=2, D=P.dens, S2=Math.SQRT2;
+  for(let j=0;j<ND;j++){const y=(j-ND/2+0.5)*DPX;for(let i=0;i<ND;i++){const x=(i-ND/2+0.5)*DPX;
+    const pi=Math.floor(x/PX+N/2),pj=Math.floor(y/PX+N/2);
+    if(!P.body[pj*N+pi])continue;
+    const rho=D[pj*N+pi], sig=3.5+5*(1-Math.min(rho,1));
+    const u=(x-iso.x)*qx+(y-iso.y)*qy;
+    const prof=0.5*(erf((u-a)/(S2*sig))-erf((u-b)/(S2*sig)));
+    if(prof<1e-3)continue;
+    let dr=0,t=step*0.5;
+    for(;;){const xx=x+sx*t,yy=y+sy*t;if(xx<=-HALF||xx>=HALF||yy<=-HALF||yy>=HALF)break;
+      dr+=D[Math.floor(yy/PX+N/2)*N+Math.floor(xx/PX+N/2)]*step;t+=step}
+    const dcm=dr/10, bu=1-Math.exp(-dcm/0.45), dist=CFG.sad-((x-iso.x)*sx+(y-iso.y)*sy);
+    out[j*ND+i]=prof*bu*Math.exp(-CFG.mu*dcm)*(CFG.sad/dist)**2;
+  }}
+  return out;
+}
+function doseCtx(ptv){return {ptv,iso:centroid(ptv),cache:new Map()}}
+function beamRaw(c,a){if(!c.cache.has(a))c.cache.set(a,beamDose(a,c.ptv,c.iso));return c.cache.get(a)}
+function planDose(c,beams){
+  const raw=new Float32Array(ND*ND);
+  for(const b of beams){if(b.w<=0)continue;const d=beamRaw(c,b.a);for(let k=0;k<raw.length;k++)raw[k]+=b.w*d[k]}
+  const img=new Float32Array(N*N);
+  for(let j=0;j<N;j++){const gy=clamp((j+0.5)*PX/DPX-0.5,0,ND-1),j0=Math.floor(gy),j1=Math.min(j0+1,ND-1),fy=gy-j0;
+    for(let i=0;i<N;i++){const gx=clamp((i+0.5)*PX/DPX-0.5,0,ND-1),i0=Math.floor(gx),i1=Math.min(i0+1,ND-1),fx=gx-i0;
+      img[j*N+i]=P.body[j*N+i]?(raw[j0*ND+i0]*(1-fx)*(1-fy)+raw[j0*ND+i1]*fx*(1-fy)+raw[j1*ND+i0]*(1-fx)*fy+raw[j1*ND+i1]*fx*fy):0}}
+  // 正規化：アイソセンタ（PTV重心）周囲 半径5 mm の平均を 60 Gy に
+  let s=0,n=0;const ci=Math.round(c.iso.x/PX+N/2-0.5),cj=Math.round(c.iso.y/PX+N/2-0.5),r=Math.ceil(5/PX);
+  for(let j=cj-r;j<=cj+r;j++)for(let i=ci-r;i<=ci+r;i++){if(i<0||j<0||i>=N||j>=N||Math.hypot(i-ci,j-cj)*PX>5)continue;s+=img[j*N+i];n++}
+  if(!(s>0)){s=0;n=0;for(let k=0;k<img.length;k++)if(c.ptv[k]){s+=img[k];n++}}
+  const f=s>0?RX/(s/n):0;for(let k=0;k<img.length;k++)img[k]*=f;
+  return img;
+}
+function metrics(img,ptv){
+  let pv=0,pn=0,tv=0,tn=0,l20=0,l5=0,ln=0,ls=0,hs=0,hn=0,cm=0,dm=0;const thr=0.95*RX;
+  for(let k=0;k<img.length;k++){const d=img[k];
+    if(ptv[k]){pn++;if(d>=thr)pv++}
+    if(REF.ptv[k]){tn++;if(d>=thr)tv++}
+    if(P.lungS[k]){ln++;ls+=d;if(d>=20)l20++;if(d>=5)l5++}
+    if(P.heart[k]){hn++;hs+=d}
+    if(P.cord[k]&&d>cm)cm=d;
+    if(d>dm)dm=d}
+  return {v95:pn?100*pv/pn:0,tv95:tn?100*tv/tn:0,v20:100*l20/ln,v5:100*l5/ln,mld:ls/ln,heart:hs/hn,cord:cm,dmax:100*dm/RX};
+}
+function scoreOf(m,useTrue){
+  const v=useTrue?m.tv95:m.v95;
+  const cov=clamp((v-80)/15,0,1)*40;
+  let oar=clamp((50-m.v20)/20,0,1)*20+clamp((24-m.mld)/8,0,1)*10+clamp((26-m.heart)/20,0,1)*10
+    +(m.cord<=CFG.cordLimit?15:Math.max(0,15-(m.cord-CFG.cordLimit)*1.5))
+    +(m.dmax<=110?5:m.dmax<=120?5*(120-m.dmax)/10:0);
+  oar*=Math.min(1,v/CFG.v95Goal)**3;
+  return Math.round(cov+oar);
+}
+function planComment(m,beams){
+  const c=[], act=beams.filter(b=>b.w>0);
+  if(m.v95<CFG.v95Goal)c.push(`PTVの${(100-m.v95).toFixed(0)}%が95%線量（57 Gy）未満です。腫瘍に届くビームを増やすか、重みを調整しましょう。`);
+  if(m.cord>CFG.cordLimit)c.push(`脊髄に最大${m.cord.toFixed(0)} Gy。後方や後斜めからのビームが脊髄を通っていませんか？`);
+  if(m.v20>CFG.v20Limit)c.push(`肺V20が${m.v20.toFixed(0)}%。肺を長く通過する角度（特に側方）は肺線量を押し上げます。`);
+  if(m.heart>CFG.heartLimit)c.push(`心臓平均${m.heart.toFixed(0)} Gy。左前方からのビームが心臓を通っていないか確認を。`);
+  if(m.dmax>115)c.push(`最大線量が処方の${m.dmax.toFixed(0)}%。ビームの入口付近にホットスポットができています。門数を増やすと分散できます。`);
+  if(act.length===1)c.push('1門照射は入射側に線量が集中します。対向や斜入を組み合わせてみましょう。');
+  if(!c.length)c.push('すべての目標を達成！さらに肺V20を下げられるか挑戦してみましょう。');
+  return c;
+}
+function dirName(a){const d={0:'前方',45:'左前斜',90:'左側方',135:'左後斜',180:'後方',225:'右後斜',270:'右側方',315:'右前斜'};const k=Math.round(a/45)*45%360;return d[k]}
+
+/* ===================== 描画 ===================== */
+const ctCanvas=(()=>{const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),im=x.createImageData(N,N);
+  for(let k=0;k<N*N;k++){const g=clamp((P.HU[k]+1350)/1500,0,1)*255;im.data[4*k]=im.data[4*k+1]=im.data[4*k+2]=g;im.data[4*k+3]=255}x.putImageData(im,0,0);return c})();
+const petCanvas=(()=>{const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),im=x.createImageData(N,N);
+  for(let k=0;k<N*N;k++){const t=clamp(P.SUV[k]/10,0,1);im.data[4*k]=255*clamp(3*t,0,1);im.data[4*k+1]=255*clamp(3*t-1,0,1);im.data[4*k+2]=255*clamp(3*t-2,0,1);im.data[4*k+3]=t<0.06?0:255*Math.min(1,t*1.6)}
+  x.putImageData(im,0,0);return c})();
+function jet(t){t=clamp(t,0,1);return[255*clamp(1.5-Math.abs(4*t-3),0,1),255*clamp(1.5-Math.abs(4*t-2),0,1),255*clamp(1.5-Math.abs(4*t-1),0,1)]}
+function doseCanvas(img){const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),im=x.createImageData(N,N);
+  for(let k=0;k<N*N;k++){const t=img[k]/(RX*1.1);if(img[k]<0.1*RX)continue;const col=jet(t);im.data[4*k]=col[0];im.data[4*k+1]=col[1];im.data[4*k+2]=col[2];im.data[4*k+3]=115}
+  x.putImageData(im,0,0);return c}
+function heatCanvas(freq){const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),im=x.createImageData(N,N);
+  for(let k=0;k<N*N;k++){const t=freq[k];if(t<=0)continue;const col=jet(0.15+0.85*t);im.data[4*k]=col[0];im.data[4*k+1]=col[1];im.data[4*k+2]=col[2];im.data[4*k+3]=60+170*t}
+  x.putImageData(im,0,0);return c}
+function draw(cv,o){
+  const ctx=cv.getContext('2d'),S=cv.width,v=o.view;
+  ctx.fillStyle='#000';ctx.fillRect(0,0,S,S);ctx.imageSmoothingEnabled=true;
+  const sx=(v.cx-v.half)/PX+N/2,sy=(v.cy-v.half)/PX+N/2,sw=2*v.half/PX;
+  ctx.drawImage(ctCanvas,sx,sy,sw,sw,0,0,S,S);
+  if(o.pet){ctx.globalAlpha=o.petA??0.6;ctx.drawImage(petCanvas,sx,sy,sw,sw,0,0,S,S);ctx.globalAlpha=1}
+  if(o.overlay){ctx.drawImage(o.overlay,sx,sy,sw,sw,0,0,S,S)}
+  const sc=S/(2*v.half), T=(x,y)=>[(x-(v.cx-v.half))*sc,(y-(v.cy-v.half))*sc];
+  const lw=Math.max(1.5,S/320);
+  for(const s of (o.segs||[])){ctx.strokeStyle=s.color;ctx.lineWidth=(s.w||1)*lw;ctx.setLineDash(s.dash?[6,5]:[]);ctx.beginPath();
+    const a=s.d;for(let p=0;p<a.length;p+=4){const A=T(a[p],a[p+1]),B=T(a[p+2],a[p+3]);ctx.moveTo(A[0],A[1]);ctx.lineTo(B[0],B[1])}ctx.stroke()}
+  ctx.setLineDash([]);
+  if(o.poly&&o.poly.length>=4){const a=o.poly;ctx.strokeStyle=o.polyColor||'#00e5ff';ctx.lineWidth=2*lw;ctx.beginPath();
+    let A=T(a[0],a[1]);ctx.moveTo(A[0],A[1]);for(let p=2;p<a.length;p+=2){A=T(a[p],a[p+1]);ctx.lineTo(A[0],A[1])}if(o.closed)ctx.closePath();ctx.stroke();
+    if(o.closed){ctx.fillStyle='rgba(0,229,255,.12)';ctx.fill()}}
+  if(o.beams){const iso=o.beams.iso;ctx.font=`${Math.round(S/30)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+    for(const b of o.beams.list){if(b.w<=0)continue;const th=b.a*Math.PI/180,sx2=Math.sin(th),sy2=-Math.cos(th);
+      const A=T(iso.x+sx2*v.half*0.98,iso.y+sy2*v.half*0.98),B=T(iso.x+sx2*30,iso.y+sy2*30);
+      ctx.strokeStyle='rgba(255,230,120,.9)';ctx.lineWidth=2.5*lw*Math.max(.5,b.w/100);ctx.beginPath();ctx.moveTo(A[0],A[1]);ctx.lineTo(B[0],B[1]);ctx.stroke();
+      const hx=B[0]-A[0],hy=B[1]-A[1],hl=Math.hypot(hx,hy),ux=hx/hl,uy=hy/hl,hs=S/45;
+      ctx.fillStyle='rgba(255,230,120,.95)';ctx.beginPath();ctx.moveTo(B[0],B[1]);ctx.lineTo(B[0]-ux*hs-uy*hs*.6,B[1]-uy*hs+ux*hs*.6);ctx.lineTo(B[0]-ux*hs+uy*hs*.6,B[1]-uy*hs-ux*hs*.6);ctx.fill();
+      const L=T(iso.x+sx2*v.half*0.86,iso.y+sy2*v.half*0.86);ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(L[0]-S/22,L[1]-S/48,S/11,S/24);ctx.fillStyle='#ffe678';ctx.fillText(b.a+'°',L[0],L[1])}}
+}
+function makeCanvas(cls){const c=document.createElement('canvas');c.width=c.height=640;if(cls)c.className=cls;return c}
+function viewerHTML(id,tag,draw){return `<div class="viewer"><canvas id="${id}" width="640" height="640" class="${draw?'draw':''}"></canvas><span class="tag">${tag}</span></div>`}
+
+/* ===================== 保存（共有DB / 端末内） ===================== */
+const Store={db:null,user:null,ready:false,
+  pid:(()=>{let p=lsGet('rtx_pid',null);if(!p){p='p'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);lsSet('rtx_pid',p)}return p})(),
+  async init(){
+    try{if(window.claude&&typeof claude.use==='function'){const[db,user]=await Promise.all([claude.use('db'),claude.use('user')]);this.db=db||null;this.user=user||null}}catch(e){this.db=null}
+    this.ready=true;setBadge();
+  },
+  async save(sub){
+    const loc=lsGet('rtx_local_subs',{});loc[this.pid]=sub;lsSet('rtx_local_subs',loc);
+    if(!this.db)return 'local';
+    try{await this.db.doc('subs/'+this.pid).set(sub);return 'shared'}catch(e){return 'local'}
+  },
+  local(){const loc=lsGet('rtx_local_subs',{});return Object.keys(loc).map(k=>({...loc[k],_id:k,_src:'local'}))}
+};
+function setBadge(){const b=$('#badge');if(!b)return;b.textContent=Store.db?'共有モード':'端末内モード'}
+
+/* ===================== 参加者側 ===================== */
+const saved=lsGet('rtx_state',{});
+const ST={step:saved.step||'intro',nick:saved.nick||'',poly:saved.poly||[],margin:saved.margin??5,
+  beams:saved.beams||[{a:0,w:100},{a:180,w:100}],pet:false,petA:0.6,zoom:true,drawing:false,saveMode:''};
+let CUR=null; // {gtv, eval, ctv, ptv, dctx, img, m}
+function persist(){lsSet('rtx_state',{step:ST.step,nick:ST.nick,poly:ST.poly,margin:ST.margin,beams:ST.beams})}
+function ensureCur(){
+  if(!CUR||CUR.polyKey!==ST.poly.join(',')||CUR.margin!==ST.margin){
+    const gtv=rasterPoly(ST.poly), ev=contourEval(gtv), t=buildTargets(gtv,ST.margin);
+    CUR={polyKey:ST.poly.join(','),margin:ST.margin,gtv,ev,ctv:t.ctv,ptv:t.ptv,gtvSeg:maskSegs(gtv),ctvSeg:maskSegs(t.ctv),ptvSeg:maskSegs(t.ptv),dctx:doseCtx(t.ptv)};
+  }
+  return CUR;
+}
+function go(step){ST.step=step;persist();renderPart();window.scrollTo(0,0)}
+
+function renderPart(){
+  const app=$('#app');
+  if(ST.step==='intro'){
+    app.innerHTML=`<div class="card"><h2>ようこそ、放射線治療計画へ</h2>
+      <p>肺癌の患者さんのCT（1スライス）を使い、放射線治療医の仕事を体験します。</p>
+      <div class="comment"><ul><li><b>① 腫瘍（GTV）を描く</b> ― 肺野条件CTとPETを見て、指でなぞる</li>
+      <li><b>② CTVマージンを選ぶ</b> ― 目に見えない広がりをどこまで含めるか</li>
+      <li><b>③ 照射を設計する</b> ― 60 Gyを腫瘍に当てつつ、肺・心臓・脊髄を守る</li></ul></div>
+      <p class="small">結果はニックネームで講師のスクリーンに表示されることがあります。本名は入れないでください。</p>
+      <h3>ニックネーム（12文字まで）</h3><input type="text" id="nick" maxlength="12" value="${esc(ST.nick)}" placeholder="例：ガンマ太郎">
+      <div class="row"><button class="primary" id="start">はじめる</button></div></div>`;
+    $('#start').onclick=()=>{const v=$('#nick').value.trim().slice(0,12);if(!v){$('#nick').focus();return}ST.nick=v;go(ST.poly.length?'result':'contour')};
+    return;
+  }
+  if(ST.step==='contour'){
+    app.innerHTML=`<div class="card"><h2>① 腫瘍（GTV）を描く</h2>
+      <p class="small">右肺の腫瘍の輪郭を指でなぞってください。指を離すと自動で閉じます。何度でも描き直せます。</p>
+      ${viewerHTML('cv','肺野条件 CT',true)}
+      <div class="row"><button id="bZoom">${ST.zoom?'全体を見る':'拡大する'}</button><button id="bPet" class="${ST.pet?'on':''}">PET ${ST.pet?'ON':'OFF'}</button></div>
+      <div id="petRow" style="display:${ST.pet?'block':'none'}"><div class="lab"><span>PETの濃さ</span><span id="petAv">${Math.round(ST.petA*100)}%</span></div><input type="range" id="petA" min="10" max="100" value="${Math.round(ST.petA*100)}"></div>
+      <div class="row"><button id="bClear">描き直し</button><button class="primary" id="bOk" ${ST.poly.length>=6?'':'disabled'}>決定</button></div></div>`;
+    const cv=$('#cv');
+    const view=()=>ST.zoom?VIEW_ZOOM:VIEW_FULL;
+    const redraw=()=>draw(cv,{view:view(),pet:ST.pet,petA:ST.petA,poly:ST.poly,closed:!ST.drawing});
+    redraw();
+    const toMm=e=>{const r=cv.getBoundingClientRect(),v=view();return[v.cx-v.half+(e.clientX-r.left)/r.width*2*v.half,v.cy-v.half+(e.clientY-r.top)/r.height*2*v.half]};
+    cv.onpointerdown=e=>{e.preventDefault();cv.setPointerCapture(e.pointerId);ST.drawing=true;ST.poly=toMm(e);redraw()};
+    cv.onpointermove=e=>{if(!ST.drawing)return;const p=toMm(e),n=ST.poly.length;if(Math.hypot(p[0]-ST.poly[n-2],p[1]-ST.poly[n-1])>0.8){ST.poly.push(p[0],p[1]);redraw()}};
+    const end=()=>{if(!ST.drawing)return;ST.drawing=false;if(ST.poly.length<6)ST.poly=[];ST.poly=simplify(ST.poly);persist();$('#bOk').disabled=ST.poly.length<6;redraw()};
+    cv.onpointerup=end;cv.onpointercancel=end;
+    $('#bZoom').onclick=()=>{ST.zoom=!ST.zoom;renderPart()};
+    $('#bPet').onclick=()=>{ST.pet=!ST.pet;renderPart()};
+    $('#petA').oninput=e=>{ST.petA=e.target.value/100;$('#petAv').textContent=e.target.value+'%';redraw()};
+    $('#bClear').onclick=()=>{ST.poly=[];persist();$('#bOk').disabled=true;redraw()};
+    $('#bOk').onclick=()=>{if(count(rasterPoly(ST.poly))<3)return;go('result')};
+    return;
+  }
+  if(ST.step==='result'){
+    const c=ensureCur(),e=c.ev;
+    app.innerHTML=`<div class="card"><h2>② CTVマージンを選ぶ</h2>
+      <div class="row" style="justify-content:space-between"><div><span class="small">あなたのGTVとエキスパートの一致度（Dice）</span><div class="big">${e.dice.toFixed(2)}</div></div>
+      <div class="small" style="text-align:right">GTV面積<br><b style="font-size:18px;color:var(--tx)">${e.area.toFixed(1)} cm²</b></div></div>
+      <div class="comment"><b>講評</b><ul>${contourComment(e).map(s=>`<li>${s}</li>`).join('')}</ul></div>
+      ${viewerHTML('cv','肺野条件 CT',false)}
+      <div class="legend"><span><i style="background:#00e5ff"></i>GTV（あなた）</span><span><i style="background:#ffd400"></i>CTV</span><span><i style="background:#ff4d4d"></i>PTV（CTV+${CFG.ptvMm} mm 自動）</span></div>
+      <h3>GTVからCTVへのマージン</h3>
+      <div class="row">${MARGINS.map(m=>`<button data-m="${m}" class="${m===ST.margin?'on':''}">${m} mm</button>`).join('')}</div>
+      <p class="small">CTVは骨・心臓・大血管の内側には広げないよう自動で切り取ります。</p>
+      <div class="row"><button id="bBack">GTVを描き直す</button><button class="primary" id="bNext">③ 照射を設計する</button></div></div>`;
+    const cv=$('#cv');
+    draw(cv,{view:VIEW_ZOOM,segs:[{d:c.ptvSeg,color:'#ff4d4d'},{d:c.ctvSeg,color:'#ffd400'},{d:c.gtvSeg,color:'#00e5ff',w:1.3}]});
+    app.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ST.margin=+b.dataset.m;persist();renderPart()});
+    $('#bBack').onclick=()=>go('contour');
+    $('#bNext').onclick=()=>go('plan');
+    return;
+  }
+  if(ST.step==='plan'||ST.step==='done'){
+    ensureCur();
+    app.innerHTML=`<div class="sticky">${viewerHTML('cv','線量分布（このスライス）',false)}
+      <div class="legend"><span><i style="background:#fff"></i>57 Gy（95%）</span><span><i style="background:#9ad0ff"></i>20 Gy</span><span><i style="background:#ff4d4d"></i>PTV</span><span><i style="background:#ff8fd0"></i>心臓</span><span><i style="background:#ffa600"></i>脊髄</span></div></div>
+      <div class="card"><div class="row" style="justify-content:space-between;margin:0"><div><span class="small">スコア</span><div class="big" id="score">–</div></div>
+      <div class="small" style="text-align:right">処方 <b style="color:var(--tx);font-size:18px">60 Gy</b><br>値はすべて「このスライスでの値」</div></div>
+      <div class="grid" id="mets" style="margin-top:8px"></div>
+      <div class="comment" id="pcom"></div></div>
+      <div class="card"><h2>③ 照射を設計する</h2><p class="small">角度：0°＝前方から、90°＝患者左側から、180°＝背中から、270°＝患者右側から。重みはそのビームの強さの比率です。</p>
+      <div id="beams"></div>
+      <div class="row"><button id="bAdd">＋ ビームを追加</button></div>
+      <div class="row"><button id="bBack">CTVに戻る</button><button class="primary" id="bSub">提出する</button></div>
+      <p class="small" id="subMsg">${ST.step==='done'?(ST.saveMode==='shared'?'提出済み。スクリーンを見てください。修正して再提出もできます。':'提出済み（この端末に保存）。修正して再提出もできます。'):''}</p></div>`;
+    renderBeams();updatePlan();
+    $('#bAdd').onclick=()=>{if(ST.beams.length>=CFG.maxBeams)return;ST.beams.push({a:(ST.beams.length*50+45)%360,w:100});persist();renderBeams();updatePlan()};
+    $('#bBack').onclick=()=>go('result');
+    $('#bSub').onclick=submit;
+  }
+}
+function simplify(a){if(a.length<=300)return a.map(v=>Math.round(v*10)/10);const st=Math.ceil(a.length/2/150),o=[];for(let p=0;p<a.length;p+=2*st)o.push(Math.round(a[p]*10)/10,Math.round(a[p+1]*10)/10);return o}
+function renderBeams(){
+  const box=$('#beams');
+  box.innerHTML=ST.beams.map((b,i)=>`<div class="beam"><div class="hd"><b>ビーム ${i+1}</b><span class="small" id="bn${i}">${b.a}°（${dirName(b.a)}）</span><button data-del="${i}" ${ST.beams.length<=1?'disabled':''}>削除</button></div>
+    <div class="lab"><span>角度</span></div><input type="range" min="0" max="355" step="5" value="${b.a}" data-a="${i}">
+    <div class="lab"><span>重み</span><span id="bw${i}">${b.w}%</span></div><input type="range" min="0" max="100" step="5" value="${b.w}" data-w="${i}"></div>`).join('');
+  box.querySelectorAll('[data-a]').forEach(el=>el.oninput=()=>{const i=+el.dataset.a;ST.beams[i].a=+el.value;$('#bn'+i).textContent=`${el.value}°（${dirName(+el.value)}）`;schedule()});
+  box.querySelectorAll('[data-w]').forEach(el=>el.oninput=()=>{const i=+el.dataset.w;ST.beams[i].w=+el.value;$('#bw'+i).textContent=el.value+'%';schedule()});
+  box.querySelectorAll('[data-del]').forEach(el=>el.onclick=()=>{ST.beams.splice(+el.dataset.del,1);persist();renderBeams();updatePlan()});
+}
+let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;persist();updatePlan()})}
+function metricHTML(m){
+  const it=[['PTV V95',m.v95,'%',`≥${CFG.v95Goal}%`,m.v95>=CFG.v95Goal],['肺 V20',m.v20,'%',`≤${CFG.v20Limit}%`,m.v20<=CFG.v20Limit],
+    ['平均肺線量',m.mld,' Gy',`≤${CFG.mldLimit} Gy`,m.mld<=CFG.mldLimit],['心臓 平均',m.heart,' Gy',`≤${CFG.heartLimit} Gy`,m.heart<=CFG.heartLimit],
+    ['脊髄 最大',m.cord,' Gy',`≤${CFG.cordLimit} Gy`,m.cord<=CFG.cordLimit],['最大線量',m.dmax,'%','≤115%',m.dmax<=115]];
+  return it.map(x=>`<div class="metric ${x[4]?'ok':'ng'}"><span>${x[0]}</span><b>${x[1].toFixed(x[2]==='%'?0:1)}${x[2]}</b><small>${x[3]}</small></div>`).join('');
+}
+function planSegs(c,img){return [{d:SEG.body,color:'rgba(180,200,220,.5)',w:.6},{d:SEG.lung,color:'rgba(120,200,255,.45)',w:.6},{d:SEG.heart,color:'#ff8fd0',w:.8},{d:SEG.cord,color:'#ffa600',w:.9},
+  {d:c.ptvSeg,color:'#ff4d4d',w:1},{d:isoSegs(img,N,20,PX),color:'#9ad0ff',w:.9,dash:true},{d:isoSegs(img,N,0.95*RX,PX),color:'#ffffff',w:1.2}]}
+function updatePlan(){
+  const c=ensureCur(),cv=$('#cv');if(!cv)return;
+  const img=planDose(c.dctx,ST.beams),m=metrics(img,c.ptv);c.img=img;c.m=m;
+  draw(cv,{view:VIEW_FULL,overlay:doseCanvas(img),segs:planSegs(c,img),beams:{iso:c.dctx.iso,list:ST.beams}});
+  $('#score').textContent=scoreOf(m,false);$('#mets').innerHTML=metricHTML(m);
+  $('#pcom').innerHTML='<b>講評</b><ul>'+planComment(m,ST.beams).map(s=>`<li>${s}</li>`).join('')+'</ul>';
+}
+async function submit(){
+  const c=ensureCur();if(!c.m)return;const m=c.m;
+  const sub={nick:ST.nick,poly:ST.poly,margin:ST.margin,beams:ST.beams.map(b=>({a:b.a,w:b.w})),dice:+c.ev.dice.toFixed(3),atel:+c.ev.atelFrac.toFixed(3),
+    m:Object.fromEntries(Object.entries(m).map(([k,v])=>[k,+v.toFixed(2)])),score:scoreOf(m,false),tscore:scoreOf(m,true),t:Date.now()};
+  $('#bSub').disabled=true;$('#subMsg').textContent='送信中…';
+  ST.saveMode=await Store.save(sub);ST.step='done';persist();
+  $('#bSub').disabled=false;
+  $('#subMsg').textContent=ST.saveMode==='shared'?'提出しました！スクリーンを見てください。修正して再提出もできます。':'この端末に保存しました（共有保存はできませんでした）。修正して再提出もできます。';
+}
+
+/* ===================== 講師側 ===================== */
+const H={tab:'contour',showRef:false,pet:false,reveal:false,pick:'ref',subs:[],demo:[],shared:[],unsub:null,loadNote:'',refPlan:null,busy:'',confirmDel:false};
+function sanitize(o,id,src){
+  if(!o||typeof o!=='object')return null;
+  const num=(v,a,b,d)=>{v=+v;return Number.isFinite(v)?clamp(v,a,b):d};
+  const poly=Array.isArray(o.poly)?o.poly.slice(0,600).map(v=>num(v,-HALF,HALF,0)):[];
+  if(poly.length<6)return null;
+  const beams=Array.isArray(o.beams)?o.beams.slice(0,8).map(b=>({a:Math.round(num(b&&b.a,0,359,0)/5)*5%360,w:num(b&&b.w,0,100,0)})):[];
+  const mm=o.m||{},m={};for(const k of ['v95','tv95','v20','v5','mld','heart','cord','dmax'])m[k]=num(mm[k],0,500,0);
+  return {_id:id,_src:src,nick:String(o.nick||'名無し').slice(0,12),poly,margin:MARGINS.includes(+o.margin)?+o.margin:5,beams,dice:num(o.dice,0,1,0),atel:num(o.atel,0,1,0),m,score:scoreOf(m,false),tscore:scoreOf(m,true)};
+}
+function allSubs(){
+  const map=new Map();
+  for(const s of H.shared)map.set(s._id,s);
+  for(const s of Store.local().map(o=>sanitize(o,o._id,'local')).filter(Boolean))if(!map.has(s._id))map.set(s._id,s);
+  for(const s of H.demo)map.set(s._id,s);
+  return [...map.values()];
+}
+function hostSubscribe(){
+  if(H.unsub||!Store.db)return;
+  let timer=setTimeout(()=>{H.loadNote='共有データにまだ接続できません。';if(isHost())renderHost()},10000);
+  try{H.unsub=Store.db.collection('subs').onSnapshot(snap=>{
+      if(!snap.metadata.fromCache){clearTimeout(timer);H.loadNote=''}
+      H.shared=snap.docs.filter(d=>d.exists).map(d=>sanitize(d.data(),d.id,'shared')).filter(Boolean);
+      if(isHost())renderHost();
+    },e=>{clearTimeout(timer);H.loadNote='共有データを読めませんでした（'+(e&&e.code||'error')+'）';if(isHost())renderHost()});
+  }catch(e){clearTimeout(timer);H.loadNote='共有データを読めませんでした'}
+}
+function radialPoly(mask,c,scale,noise,rnd,off){
+  const pts=[],n=72,ph0=rnd()*6.28,ph1=rnd()*6.28;
+  for(let k=0;k<n;k++){const a=k/n*2*Math.PI,dx=Math.cos(a),dy=Math.sin(a);let r=0;
+    for(let t=0;t<90;t+=0.5){const i=Math.floor((c.x+dx*t)/PX+N/2),j=Math.floor((c.y+dy*t)/PX+N/2);if(i<0||j<0||i>=N||j>=N)break;if(mask[j*N+i])r=t}
+    const rr=Math.max(3,r*scale*(1+noise*(0.6*Math.sin(3*a+ph0)+0.4*Math.sin(7*a+ph1))));
+    pts.push(Math.round((c.x+off[0]+dx*rr)*10)/10,Math.round((c.y+off[1]+dy*rr)*10)/10)}
+  return pts;
+}
+async function makeDemo(n){
+  const rnd=mulberry32(Date.now()&0xffff), union=new Uint8Array(N*N);for(let k=0;k<union.length;k++)union[k]=P.gtv[k]||P.atel[k]?1:0;
+  const pats=[()=>[0,180],()=>[270],()=>[0,90,180,270],()=>[0,180,315,135],()=>[300,30,180],()=>[180],()=>[0,180,45,225],()=>{const k=2+Math.floor(rnd()*4),a=[];for(let i=0;i<k;i++)a.push(Math.round(rnd()*71)*5);return a}];
+  const names=['ガンマ','リニアック','陽子','炭素','ブラッグ','光子','電子','ボーラス','ウェッジ','MLC'];
+  for(let i=0;i<n;i++){
+    H.busy=`デモ参加者を作成中… ${i+1}/${n}`;renderHost();await new Promise(r=>setTimeout(r,0));
+    const u=rnd(),kind=u<0.3?'atel':u<0.45?'small':u<0.85?'good':'big';
+    const scale=kind==='small'?0.72+rnd()*0.12:kind==='big'?1.25+rnd()*0.2:kind==='atel'?0.95+rnd()*0.1:0.93+rnd()*0.14;
+    const poly=radialPoly(kind==='atel'?union:P.gtv,P.TC,scale,0.05+rnd()*0.07,rnd,[(rnd()-0.5)*5,(rnd()-0.5)*5]);
+    const margin=[0,5,5,5,8,10][Math.floor(rnd()*6)];
+    const pat=pats[Math.floor(rnd()*pats.length)]();const beams=pat.map(a=>({a:((a+Math.round((rnd()-0.5)*4)*5)%360+360)%360,w:pat.length===1?100:Math.round((40+rnd()*60)/5)*5}));
+    const gtv=rasterPoly(poly),ev=contourEval(gtv),t=buildTargets(gtv,margin),img=planDose(doseCtx(t.ptv),beams),m=metrics(img,t.ptv);
+    H.demo.push({_id:'demo'+i+'_'+Date.now(),_src:'demo',nick:names[i%names.length]+(Math.floor(i/names.length)+1),poly,margin,beams,dice:ev.dice,atel:ev.atelFrac,m,score:scoreOf(m,false),tscore:scoreOf(m,true)});
+  }
+  H.busy='';renderHost();
+}
+let refPromise=null;
+function computeRefPlan(){
+  if(H.refPlan)return Promise.resolve(H.refPlan);
+  if(refPromise)return refPromise;
+  refPromise=(async()=>{
+    await Promise.resolve();
+    H.busy='参照プラン（4門）を計算中…';renderHost();await new Promise(r=>setTimeout(r,20));
+    const c=doseCtx(REF.ptv);let best=null;
+    for(let th=10;th<180;th+=10){
+      const beams=[{a:0,w:100},{a:180,w:100},{a:th,w:50},{a:th+180,w:50}],img=planDose(c,beams),m=metrics(img,REF.ptv);
+      const key=(m.v95>=93?0:1000)+m.cord*2+m.v20;if(!best||key<best.key)best={key,beams,img,m};
+    }
+    H.refPlan={nick:'参照：前後対向＋斜入（計4門）',beams:best.beams,img:best.img,m:best.m,ptvSeg:REF.ptvSeg,iso:c.iso,ref:true};
+    H.busy='';renderHost();return H.refPlan;
+  })();
+  return refPromise;
+}
+const planCache=new Map();
+function subPlan(s){
+  const key=s._id+JSON.stringify([s.poly.length,s.margin,s.beams]);
+  if(planCache.has(key))return planCache.get(key);
+  const gtv=rasterPoly(s.poly),t=buildTargets(gtv,s.margin),c=doseCtx(t.ptv),img=planDose(c,s.beams),m=metrics(img,t.ptv);
+  const r={nick:s.nick,beams:s.beams,img,m,ptvSeg:maskSegs(t.ptv),iso:c.iso};planCache.set(key,r);return r;
+}
+const isHost=()=>location.hash==='#host';
+function renderHost(){
+  const app=$('#app'),subs=allSubs();H.subs=subs;
+  const st=`<p class="small">提出 ${subs.length}件（共有 ${H.shared.length}／この端末 ${subs.filter(s=>s._src==='local').length}／デモ ${H.demo.length}）${Store.db?'':' ・ 共有DBに接続していません'}</p>${H.loadNote?`<p class="warnline">${esc(H.loadNote)}</p>`:''}${H.busy?`<p class="warnline">${esc(H.busy)}</p>`:''}`;
+  const tabs=`<div class="tabs">${[['contour','輪郭'],['plan','プラン'],['rank','ランキング'],['set','設定']].map(t=>`<button data-tab="${t[0]}" class="${H.tab===t[0]?'on':''}">${t[1]}</button>`).join('')}</div>`;
+  let body='';
+  if(H.tab==='contour'){
+    const n=subs.length,dices=subs.map(s=>s.dice).sort((a,b)=>a-b),med=n?dices[Math.floor(n/2)]:0,atel=subs.filter(s=>s.atel>0.15).length;
+    const bins=[0,0,0,0,0,0];for(const d of dices)bins[Math.min(5,Math.max(0,Math.floor((d-0.5)/0.1)))]++;const mx=Math.max(1,...bins);
+    body=`<div class="host-wrap"><div class="card">${viewerHTML('hc','全員のGTV重ね合わせ（色＝描いた人の割合）',false)}
+      <div class="row"><button id="hRef" class="${H.showRef?'on':''}">正解GTV ${H.showRef?'表示中':'を表示'}</button><button id="hPet" class="${H.pet?'on':''}">PET ${H.pet?'ON':'OFF'}</button></div></div>
+      <div class="card"><h2>輪郭のばらつき</h2><p>参加者 <b>${n}</b>人 ／ Dice中央値 <b>${med.toFixed(2)}</b></p>
+      <p>無気肺まで含めた人：<b>${atel}</b>人（${n?Math.round(100*atel/n):0}%）</p>
+      <h3>Dice分布</h3><div class="hist">${bins.map((b,i)=>`<div style="height:${100*b/mx}%"><span>${i===0?'≤0.6':(0.5+i*0.1).toFixed(1)}</span></div>`).join('')}</div>
+      <p class="small" style="margin-top:24px">「同じ画像を見ても、人によって輪郭はこれだけ違う」。正解表示とPETを順に切り替えると、無気肺との区別の話につなげられます。</p></div></div>`;
+  }else if(H.tab==='plan'){
+    const by=(f,dir)=>subs.length?subs.reduce((a,b)=>(dir*f(b)>dir*f(a)?b:a)):null;
+    const picks=[['ref','参照：4門',null],['best','最高スコア',by(s=>s.score,1)],['worst','最低スコア',by(s=>s.score,-1)],['v20','肺V20 最大',by(s=>s.m.v20,1)],['cord','脊髄線量 最大',by(s=>s.m.cord,1)],['hot','ホットスポット最大',by(s=>s.m.dmax,1)],['few','門数 最少',by(s=>-s.beams.filter(b=>b.w>0).length,1)]];
+    body=`<div class="host-wrap"><div class="card">${viewerHTML('hc','線量分布',false)}<div class="legend"><span><i style="background:#fff"></i>57 Gy</span><span><i style="background:#9ad0ff"></i>20 Gy</span><span><i style="background:#ff4d4d"></i>PTV</span></div>
+      <h3 id="hName"></h3><div class="grid" id="hMets"></div></div>
+      <div class="card"><h2>プランを公開</h2><div class="picks">${picks.map(p=>`<button data-pick="${p[0]}" class="${H.pick===p[0]?'on':''}" ${p[0]!=='ref'&&!p[2]?'disabled':''}>${p[1]}${p[2]?`：${esc(p[2].nick)}（${p[2].score}点）`:''}</button>`).join('')}</div></div></div>`;
+    H._picks=Object.fromEntries(picks.map(p=>[p[0],p[2]]));
+  }else if(H.tab==='rank'){
+    const key=H.reveal?'tscore':'score',orig=[...subs].sort((a,b)=>b.score-a.score),rk=new Map(orig.map((s,i)=>[s._id,i+1]));
+    const list=[...subs].sort((a,b)=>b[key]-a[key]).slice(0,15);
+    body=`<div class="card"><div class="row"><button id="hRev" class="${H.reveal?'on':''}">${H.reveal?'自分のPTVでの順位に戻す':'正解PTVで再評価する'}</button></div>
+      <p class="small">${H.reveal?'エキスパートの輪郭から作ったPTVで、同じプランを採点し直しています。輪郭がずれていると、どんなに良い分布でも腫瘍を外します。':'各自が描いた輪郭（自分のPTV）に対するスコアです。'}</p>
+      <table><tr><th>#</th><th>名前</th><th>スコア</th><th>PTV V95</th><th>Dice</th>${H.reveal?'<th>変動</th>':''}</tr>
+      ${list.map((s,i)=>{const d=rk.get(s._id)-(i+1);return `<tr><td>${i+1}</td><td>${esc(s.nick)}</td><td><b>${s[key]}</b></td><td>${(H.reveal?s.m.tv95:s.m.v95).toFixed(0)}%</td><td>${s.dice.toFixed(2)}</td>${H.reveal?`<td class="${d>0?'up':d<0?'down':''}">${d>0?'↑'+d:d<0?'↓'+(-d):'–'}</td>`:''}</tr>`}).join('')}</table>
+      ${subs.length?'':'<p class="small">まだ提出がありません。</p>'}</div>`;
+  }else{
+    body=`<div class="card"><h2>リハーサル用</h2><p class="small">模擬参加者を作り、講師画面の動きを確認できます（デモはこの画面の中だけで、保存されません）。</p>
+      <div class="row"><button id="hDemo" ${H.busy?'disabled':''}>デモ参加者を30人追加</button><button id="hDemoClr">デモを消去</button></div></div>
+      <div class="card"><h2>データ管理</h2><p class="small">この端末に保存された提出：${Store.local().length}件</p>
+      <div class="row"><button id="hLocClr">この端末の提出を消去</button></div>
+      ${Store.db?`<div class="row"><button id="hDelAll" class="${H.confirmDel?'on':''}">${H.confirmDel?'本当に共有データを全消去する（もう一度押す）':'共有データ（提出）を全消去'}</button></div>`:''}</div>`;
+  }
+  app.innerHTML=`<div class="card" style="padding:10px 14px"><h2>講師用画面</h2>${st}</div>${tabs}${body}`;
+  app.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{H.tab=b.dataset.tab;H.confirmDel=false;renderHost()});
+  if(H.tab==='contour'){
+    const freq=new Float32Array(N*N);for(const s of subs){const m=rasterPoly(s.poly);for(let k=0;k<m.length;k++)freq[k]+=m[k]}
+    if(subs.length)for(let k=0;k<freq.length;k++)freq[k]/=subs.length;
+    draw($('#hc'),{view:VIEW_ZOOM,pet:H.pet,petA:0.55,overlay:heatCanvas(freq),segs:H.showRef?[{d:REF.gtvSeg,color:'#ffffff',w:1.6}]:[]});
+    $('#hRef').onclick=()=>{H.showRef=!H.showRef;renderHost()};$('#hPet').onclick=()=>{H.pet=!H.pet;renderHost()};
+  }else if(H.tab==='plan'){
+    app.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{H.pick=b.dataset.pick;renderHost()});
+    (async()=>{let r;if(H.pick==='ref')r=await computeRefPlan();else{const s=H._picks[H.pick];if(!s)return;r=subPlan(s)}
+      const cv=$('#hc');if(!cv)return;
+      draw(cv,{view:VIEW_FULL,overlay:doseCanvas(r.img),segs:planSegs({ptvSeg:r.ptvSeg},r.img),beams:{iso:r.iso,list:r.beams}});
+      $('#hName').textContent=r.nick+(r.ref?'':`（${r.beams.filter(b=>b.w>0).length}門）`);$('#hMets').innerHTML=metricHTML(r.m);
+    })();
+  }else if(H.tab==='rank'){
+    $('#hRev').onclick=()=>{H.reveal=!H.reveal;renderHost()};
+  }else{
+    $('#hDemo').onclick=()=>makeDemo(30);
+    $('#hDemoClr').onclick=()=>{H.demo=[];renderHost()};
+    $('#hLocClr').onclick=()=>{lsSet('rtx_local_subs',{});renderHost()};
+    const del=$('#hDelAll');if(del)del.onclick=async()=>{if(!H.confirmDel){H.confirmDel=true;renderHost();return}
+      H.confirmDel=false;H.busy='消去中…';renderHost();for(const s of H.shared){try{await Store.db.doc('subs/'+s._id).delete()}catch(e){}}H.busy='';renderHost()};
+  }
+}
+
+/* ===================== 起動 ===================== */
+function route(){if(isHost()){hostSubscribe();renderHost()}else renderPart()}
+window.addEventListener('hashchange',route);
+route();
+Store.init().then(()=>{if(isHost()){hostSubscribe();renderHost()}});
+</script>
+</body>
+</html>
